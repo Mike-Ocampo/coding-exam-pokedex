@@ -5,5 +5,11 @@ export const fetchPokemon = async (limit: number, offset: number) => {
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
-  return response.json();
+
+  const data = await response.json();
+
+  return {
+    data: data.results,
+    nextCursor: data.next ? offset + limit : undefined,
+  };
 };
