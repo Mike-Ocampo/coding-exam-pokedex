@@ -22,7 +22,7 @@ type Pokemon = {
   };
 };
 
-const Page = ({ params }: { params: { slug: string } }) => {
+const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
   const [nickname, setNickname] = useState("");
   const [date, setDate] = useState("");
   const [capturedDetails, setCapturedDetails] = useState<
