@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { fetchPokemon } from "../lib/fetchPokemon";
 import PokemonCard from "../components/PokemonCard";
 import ViewToggle from "../components/ViewToggle";
 import Link from "next/link";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-const LIMIT = 150;
-const OFFSET = 0;
+const LIMIT = 50;
 
 interface Pokemon {
   name: string;
@@ -21,14 +20,29 @@ interface CapturedDetails {
   date: string;
 }
 
+interface FetchProjectsParams {
+  pageParam: string | number;
+}
+
 export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCapturedOnly, setIsCapturedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const { data, error, isLoading } = useQuery({
-    queryKey: ["pokemon", LIMIT, OFFSET],
-    queryFn: () => fetchPokemon(LIMIT, OFFSET),
+  const {
+    data,
+    error,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ["pokemon", LIMIT],
+    queryFn: ({ pageParam = 0 }) => fetchPokemon(LIMIT, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
   if (isLoading) {
@@ -40,9 +54,11 @@ export default function Page() {
   }
   if (error instanceof Error) return <div>Error: {error.message}</div>;
 
-  const filteredPokemons = data?.results.filter((pokemon: Pokemon) =>
-    pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPokemons = data?.pages
+    .flatMap((page) => page.data) // Flatten all pages into a single array
+    .filter((pokemon: Pokemon) =>
+      pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   const limitedPokemons = searchTerm
     ? filteredPokemons?.slice(0, 150)
@@ -54,7 +70,7 @@ export default function Page() {
     : [];
 
   const displayedPokemons = isCapturedOnly
-    ? limitedPokemons?.filter((pokemon: any) =>
+    ? limitedPokemons?.filter((pokemon) =>
         capturedPokemonDetails.some(
           (captured) => captured.character === pokemon.name
         )
@@ -175,6 +191,27 @@ export default function Page() {
           })
         )}
       </div>
+      {!isCapturedOnly && (
+        <>
+          <div className="flex justify-center items-center mt-8">
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={!hasNextPage || isFetchingNextPage}
+              className={`px-4 py-2 ml-4 border rounded-lg bg-blue-500 text-white`}
+            >
+              {isFetchingNextPage
+                ? "Loading more..."
+                : hasNextPage
+                ? "Load More"
+                : "Nothing more to load"}
+            </button>
+
+            <div>
+              {isFetching && !isFetchingNextPage ? "Fetching..." : null}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

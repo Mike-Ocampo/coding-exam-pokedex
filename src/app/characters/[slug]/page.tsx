@@ -3,15 +3,34 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
+type Ability = {
+  ability: {
+    name: string;
+    url: string;
+  };
+  is_hidden: boolean;
+  slot: number;
+};
+
+type Pokemon = {
+  id: number;
+  name: string;
+  base_experience: number;
+  abilities: Ability[];
+  sprites: {
+    front_default: string;
+  };
+};
+
+const Page = ({ params }: { params: { slug: string } }) => {
   const [nickname, setNickname] = useState("");
   const [date, setDate] = useState("");
   const [capturedDetails, setCapturedDetails] = useState<
     { nickname: string; date: string }[]
   >([]);
-  const [pokemon, setPokemon] = useState<any>(null);
+  const [pokemon, setPokemon] = useState<Pokemon | null>(null);
   const [loading, setLoading] = useState(true);
-  const [successMessage, setSuccessMessage] = useState(""); // New state for success message
+  const [successMessage, setSuccessMessage] = useState("");
 
   const router = useRouter();
 
@@ -34,7 +53,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
       return;
     }
 
-    const newDetail = { character: pokemon.name, nickname, date };
+    const newDetail = { character: pokemon?.name, nickname, date };
     const updatedDetails = [...capturedDetails, newDetail];
     localStorage.setItem("capturedDetails", JSON.stringify(updatedDetails));
     setCapturedDetails(updatedDetails);
@@ -128,7 +147,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
             </h2>
             {pokemon.abilities?.length > 0 ? (
               <>
-                {pokemon.abilities.map((ability: any) => (
+                {pokemon.abilities.map((ability: Ability) => (
                   <p
                     key={ability?.ability?.name}
                     className="text-lg text-gray-600"
